@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 import firebase_admin
 from firebase_admin import credentials, firestore
+from pydantic import BaseModel
 
 # firebaseの初期化
 cred = credentials.Certificate("credentials.json")
@@ -25,19 +26,26 @@ def root(request: Request):
 @app.get("/todos")
 def get_todos():
     docs = db.collection("todos").stream()
-    return [{"id": d.id, "name": d.to_dict()["name"]}for d in docs]
+    todos_list = [{"id": d.id, "name": d.to_dict()["name"]}for d in docs]
+    return {"todos": todos_list}
  
-@app.post("/todos")
+@app.post("/todos") #クエリパラメータ
 def add_todo(name: str):
-    db.collection("todos").add({"name": name})
-    return {"result": "ok"}
+    updated_time, doc_ref = db.collection("todos").add({"name": name})
+    return {
+        "result": "ok",
+        "todo": {
+            "id": doc_ref.id,
+            "name": name,
+        }
+    }
 
-@app.put("/todos/{id}")
+@app.put("/todos/{id}") #パスパラメータ
 def update_todo(id: str, name: str):
     db.collection("todos").document(id).update({"name": name})
-    return {"result": "ok"}
+    return {"result": "ok", "id": id}
 
 @app.delete("/todos/{id}")
 def delete_todo(id: str):
     db.collection("todos").document(id).delete()
-    return {"result": "ok"}
+    return {"result": "ok", "id": id}
