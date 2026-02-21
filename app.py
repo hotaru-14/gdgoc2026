@@ -17,6 +17,9 @@ app = FastAPI()
 # Htmlファイルの場所指定
 templates = Jinja2Templates(directory="templates")
 
+class Todo(BaseModel):
+    name: str
+
 # ルートページ
 @app.get("/")
 def root(request: Request):
@@ -30,19 +33,19 @@ def get_todos():
     return {"todos": todos_list}
  
 @app.post("/todos") #クエリパラメータ
-def add_todo(name: str):
-    updated_time, doc_ref = db.collection("todos").add({"name": name})
+def add_todo(todo: Todo):
+    updated_time, doc_ref = db.collection("todos").add({"name": todo.name})
     return {
         "result": "ok",
         "todo": {
             "id": doc_ref.id,
-            "name": name,
+            "name": todo.name,
         }
     }
 
 @app.put("/todos/{id}") #パスパラメータ
-def update_todo(id: str, name: str):
-    db.collection("todos").document(id).update({"name": name})
+def update_todo(id: str, todo: Todo):
+    db.collection("todos").document(id).update({"name": todo.name})
     return {"result": "ok", "id": id}
 
 @app.delete("/todos/{id}")
